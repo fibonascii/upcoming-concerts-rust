@@ -7,8 +7,19 @@ struct Concert {
     event_location: String,
 }
 
-fn serialize_events(events: Vec<Concert>) -> Vec<std::string::String> {
+#[tokio::main]
+async fn get_page_response(url: &str) -> Result<std::string::String, Box<dyn std::error::Error>> {
+    let resp = reqwest::get(url)
+        .await?
+        .text()
+        .await?;
 
+
+    return Ok(resp);
+}
+
+
+fn serialize_events(events: Vec<Concert>) -> Vec<std::string::String> {
     let mut concerts = vec![];
     for event in events {
         let concert = serde_json::to_string(&event);
@@ -21,13 +32,7 @@ fn serialize_events(events: Vec<Concert>) -> Vec<std::string::String> {
     return concerts;
 }
 
-#[tokio::main]
-async fn get_concerts(url: &str)  -> std::result::Result<(), Box<dyn std::error::Error>> {
-    let resp = reqwest::get(url)
-        .await?
-        .text()
-        .await?;
-
+fn get_concerts(resp: &str)  -> Vec<std::string::String> {
     let table = table_extract::Table::find_by_id(&resp, "shTable").unwrap();
 
     let mut events = vec![];
@@ -48,13 +53,11 @@ async fn get_concerts(url: &str)  -> std::result::Result<(), Box<dyn std::error:
 
    let concerts = serialize_events(events);
 
-   println!("{:#?}", concerts);
-   Ok(())
+   return concerts; 
 }
 
 fn main() {
-     match get_concerts("http://concertsdallas.com") {
-         Ok(_) => println!("Request was successful!"),
-         Err(_) => println!("Request was unsuccessful!"),
-     }
+    let response = get_page_response("http://concertsdallas.com");
+    let concerts = get_concerts(&response.unwrap());
+   println!("{:#?}", concerts);
 }
